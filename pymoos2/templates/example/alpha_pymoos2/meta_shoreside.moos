@@ -1,0 +1,117 @@
+//**************************************************
+// ShoreSide Configuration File
+
+ServerHost = localhost
+ServerPort = $(MOOS_PORT)
+Community  = shoreside
+
+#include plugs.moos <origin_warp>
+  
+//--------------------------------------------------
+Processconfig = ANTLER
+{
+  MSBetweenLaunches = 150
+
+  Run = MOOSDB          @ NewConsole = false
+  Run = pRealm          @ NewConsole = false
+  Run = pMarineViewer   @ NewConsole = false
+  Run = pLogger         @ NewConsole = false
+
+  Run = pShare          @ NewConsole = false
+  Run = pHostInfo       @ NewConsole = false
+  Run = uFldShoreBroker @ NewConsole = false
+  Run = uProcessWatch   @ NewConsole = false
+  Run = pNodeWatch      @ NewConsole = false
+}
+
+#include plugs.moos <pShare>
+#include plugs.moos <pHostInfo>
+#include plugs.moos <uProcessWatch>
+
+//--------------------------------------------------
+// uFldShoreBroker config Block
+
+ProcessConfig = uFldShoreBroker
+{
+  AppTick   = 1
+  CommsTick = 1
+
+  qbridge = DEPLOY, NODE_REPORT, NODE_MESSAGE
+  qbridge = STATION_KEEP, APPCAST_REQ
+  qbridge = MOOS_MANUAL_OVERRIDE
+ 
+  bridge  = src=RETURN_ALL, alias=RETURN
+  bridge  = src=RETURN_$V,  alias=RETURN
+
+  bridge  = src=REGION_INFO,  alias=REGION_INFO
+  bridge  = src=MISSION_HASH
+}
+
+//--------------------------------------------------
+// pLogger config Block
+
+ProcessConfig = pLogger
+{
+  AppTick       = 10
+  CommsTick     = 10
+  
+  File          = XLOG_SHORESIDE
+  PATH          = ./
+  AsyncLog      = true
+  FileTimeStamp = true
+
+  // Log it all!!!!!
+  WildCardLogging = true 
+  WildCardOmitPattern = DB_VARSUMMARY
+  WildCardOmitPattern = DB_RWSUMMARY
+}
+
+
+//--------------------------------------------------------
+// pMarineViewer config Block
+
+ProcessConfig = pMarineViewer
+{
+  AppTick    = 4
+  CommsTick  = 4
+
+#ifdef REGION pavlab
+  tiff_file            = MIT_SP.tif
+#else
+  tiff_file            = forrest19.tif
+#endif
+  set_pan_x            = -90
+  set_pan_y            = -280
+  zoom                 = 1
+  vehicles_shape_scale = 1.5
+  vehicles_name_mode   = names+shortmode
+
+  appcast_viewable     = true
+  appcast_color_scheme = indigo
+	appcast_font_size    = large
+	procs_font_size      = large
+	nodes_font_size      = xlarge
+	
+  comms_pulse_viewable_all = false
+  vehicles_name_mode = names
+
+  stale_report_thresh = 10
+  stale_remove_thresh = 20
+
+  scope = PHI_HOST_INFO
+
+  button_one = DEPLOY  # DEPLOY_ALL=true 
+  button_one = MOOS_MANUAL_OVERRIDE_ALL=false 
+  button_one = RETURN_ALL=false
+  button_two = RETURN  # RETURN_ALL=true
+}
+
+//--------------------------------------------------
+// pNodeWatch config block (pymoos2 example)
+
+ProcessConfig = pNodeWatch
+{
+  AppTick   = 4
+  CommsTick = 4
+  web_port  = 8081
+}

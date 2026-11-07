@@ -1,13 +1,14 @@
 [build-system]
-requires = ["setuptools>=68.0", "wheel"]
+requires = ["setuptools>=68.0,<74.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "pymoos2"
-version = "0.1.0"
-description = "Pure-Python MOOS-IvP application framework"
+version = "1.0.0"
+description = "MOOS-IvP applications in Python: wire protocol, AppCasting, mission files, geometry and PROJ-based geodesy"
 readme = "README.md"
 requires-python = ">=3.8"
+dependencies = ["pyproj>=3.4"]
 license = {text = "MIT"}
 authors = [
     {name = "Raymond Turrisi", email = "rturrisi@mit.edu"},
@@ -19,9 +20,22 @@ classifiers = [
     "License :: OSI Approved :: MIT License",
     "Topic :: Scientific/Engineering",
     "Programming Language :: Python :: 3",
-    "Operating System :: Unix",
+    "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+    "Topic :: Scientific/Engineering :: GIS",
+    "Operating System :: POSIX :: Linux",
     "Operating System :: MacOS :: MacOS X",
 ]
+
+[project.optional-dependencies]
+web = ["fastapi", "uvicorn", "websockets", "pillow"]
+test = ["pytest"]
 
 [project.urls]
 Homepage = "https://github.com/raymondturrisi/pymoos2"
@@ -34,4 +48,10 @@ pymoos2 = "pymoos2.__main__:main"
 include = ["pymoos2*"]
 
 [tool.setuptools.package-data]
-pymoos2 = ["templates/**/*"]
+pymoos2 = ["templates/**/*", "cmake/*", "assets/*"]
+
+[tool.setuptools.exclude-package-data]
+pymoos2 = ["**/__pycache__/*", "**/*.pyc"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

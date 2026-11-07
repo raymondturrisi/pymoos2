@@ -308,8 +308,7 @@ def test_cmake_version_request(tmp_path):
     r = run([CMAKE, "-S", str(tmp_path), "-B", str(tmp_path / "b")])
     assert r.returncode == 0, r.stdout + r.stderr
     found = dict(ln.split("req=")[1].split(" found=") for ln in r.stdout.splitlines() if "req=" in ln)
-    assert __version__ == "1.0.0"
-    assert found["1.0"].startswith("1 version=1.0.0") and found["1.0.0"].startswith("1")
+    assert found["1.0"].startswith(f"1 version={__version__}") and found["1.0.0"].startswith("1")
     assert found["1.1"].startswith("0") and found["0.2"].startswith("0") and found["2.0"].startswith("0")
 
 

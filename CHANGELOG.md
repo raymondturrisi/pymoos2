@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.0.1
+
+- Shorter README and package description; comments removed from the code.
+
 ## 1.0.0
 
 A robustness release. It removes old designs rather than keeping them

@@ -4,8 +4,8 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "pymoos2"
-version = "1.0.0"
-description = "MOOS-IvP applications in Python: wire protocol, AppCasting, mission files, geometry and PROJ-based geodesy"
+version = "1.0.1"
+description = "Write MOOS-IvP applications in Python"
 readme = "README.md"
 requires-python = ">=3.8"
 dependencies = ["pyproj>=3.4"]

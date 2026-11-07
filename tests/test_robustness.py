@@ -348,4 +348,4 @@ def test_appcast_bookkeeping():
 def test_package_exports():
     for name in pymoos2.__all__:
         assert hasattr(pymoos2, name), name
-    assert pymoos2.__version__ == "1.0.0"
+    assert pymoos2.__version__ == "1.0.1"

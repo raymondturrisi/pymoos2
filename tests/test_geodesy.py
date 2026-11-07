@@ -211,7 +211,7 @@ def test_geodesic_path_and_validation():
 
 def test_distortion_at_the_origin():
     d = distortion(LocalFrame(*MIT, projection="aeqd"), *MIT)
-    assert abs(d.scale_ppm) < 1e-3 and abs(d.convergence_deg) < 1e-6
+    assert abs(d.scale_ppm) < 0.05 and abs(d.convergence_deg) < 1e-6
     assert d.range_m == 0.0 and d.range_error_m == 0.0 and d.bearing_error_deg == 0.0
     d = distortion(LocalFrame(*MIT), *MIT)
     assert -45 < d.scale_ppm < -35

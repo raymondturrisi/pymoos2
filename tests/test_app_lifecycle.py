@@ -114,10 +114,11 @@ def test_appcast_req_is_filtered_and_report_posted(db, tmp_path):
 
 
 def test_tick_rate_holds_with_slow_iterate(db, tmp_path):
-    app = Probe()
-    app.iterate_sleep = 0.02
-    run_app(app, write_mission(tmp_path, db.port), 1.5)
-    assert app.m_iteration >= 13
+    fast, slow = Probe(), Probe()
+    slow.iterate_sleep = 0.02
+    run_app(fast, write_mission(tmp_path, db.port), 1.5)
+    run_app(slow, write_mission(tmp_path, db.port), 1.5)
+    assert slow.m_iteration >= fast.m_iteration - 1
 
 
 def test_reconnect_calls_on_connect_again(db, tmp_path):

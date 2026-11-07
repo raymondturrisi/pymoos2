@@ -24,7 +24,7 @@ _NUMERIC = {
     "DEP": "depth", "DEPTH": "depth",
     "LENGTH": "length", "LEN": "length",
     "BEAM": "beam",
-    "YAW": "yaw", "PITCH": "pitch",
+    "YAW": "yaw",
     "ALT": "altitude", "ALTITUDE": "altitude",
     "HDG_OG": "heading_og", "COG": "cog", "SPD_OG": "speed_og", "SPEED_OG": "speed_og",
     "TRANSPARENCY": "transparency",
@@ -52,7 +52,7 @@ class NodeRecord:
     __slots__ = (
         "name", "type", "group", "color", "vsource",
         "x", "y", "lat", "lon",
-        "speed", "speed_og", "heading", "heading_og", "cog", "yaw", "pitch",
+        "speed", "speed_og", "heading", "heading_og", "cog", "yaw",
         "depth", "altitude",
         "length", "beam",
         "timestamp", "index", "transparency", "thrust_mode_reverse",
@@ -77,7 +77,6 @@ class NodeRecord:
         self.heading_og = 0.0
         self.cog = 0.0
         self.yaw = 0.0
-        self.pitch = 0.0
         self.depth = 0.0
         self.altitude = 0.0
         self.length = 0.0
@@ -175,7 +174,7 @@ class NodeRecord:
             s += ",BEAM=" + f(self.beam, 2)
         if self.trajectory:
             s += ",TRAJECTORY={" + self.trajectory + "}"
-        for k, v in self.properties.items():
+        for k, v in sorted(self.properties.items()):
             s += f",{k}={v}"
         return s
 
@@ -218,7 +217,7 @@ class NodeRecord:
             if v:
                 d[attr] = v
         for attr in ("x", "y", "lat", "lon", "speed", "speed_og", "heading", "heading_og",
-                     "cog", "yaw", "pitch", "depth", "altitude", "length", "beam",
+                     "cog", "yaw", "depth", "altitude", "length", "beam",
                      "timestamp", "transparency"):
             if attr in self.fields_set:
                 d[attr] = getattr(self, attr)

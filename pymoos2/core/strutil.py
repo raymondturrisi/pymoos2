@@ -1,5 +1,6 @@
 """String helpers for mission files and VIEW_* specs."""
 
+import math
 import re
 
 _NUMBER_RE = re.compile(r"^[+-]?(\d+\.?\d*|\.\d+)([eE][+-]?\d+)?$")
@@ -119,8 +120,19 @@ def strip_braces(s):
 
 
 def is_number(s):
-    """True if s parses as a plain decimal number."""
-    return bool(_NUMBER_RE.match(s.strip())) if isinstance(s, str) else False
+    """True if s is a plain decimal number with a finite value."""
+    if not isinstance(s, str) or not _NUMBER_RE.match(s.strip()):
+        return False
+    return math.isfinite(float(s))
+
+
+def to_int(s, default=None):
+    """int of numeric text, or default when it is not a finite number."""
+    try:
+        f = float(s)
+    except (TypeError, ValueError):
+        return default
+    return int(f) if math.isfinite(f) else default
 
 
 def is_boolean(s):

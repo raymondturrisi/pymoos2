@@ -8,7 +8,7 @@ REALMCAST_REQ       client=C,duration=3[,nosrc][,nocom][,nosubs][,wrap][,mask][,
 APPCAST_REQ         node=V,app=P,duration=3,key=K,thresh=any|run_warning
 """
 
-from pymoos2.core.strutil import double_to_string_x
+from pymoos2.core.strutil import double_to_string_x, to_int
 
 
 class RealmCast:
@@ -42,10 +42,9 @@ def parse_realmcast(text):
         elif param == "proc":
             rc.proc = value.strip()
         elif param == "count":
-            try:
-                rc.count = int(float(value))
-            except ValueError:
-                pass
+            n = to_int(value)
+            if n is not None:
+                rc.count = n
         elif param == "messages":
             lines = value.split("!Z!")
             if lines and lines[-1] == "":

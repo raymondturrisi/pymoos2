@@ -6,6 +6,8 @@
 Outer separator !@#, inner separator !@.
 """
 
+from pymoos2.core.strutil import to_int
+
 OSEP = "!@#"
 ISEP = "!@"
 
@@ -90,10 +92,9 @@ def parse_appcast(text):
         if param == "proc":
             ac.proc = value.strip()
         elif param == "iter":
-            try:
-                ac.iteration = int(float(value.strip()))
-            except ValueError:
-                pass
+            n = to_int(value)
+            if n is not None:
+                ac.iteration = n
         elif param == "node":
             ac.node = value.strip()
         elif param == "messages":
@@ -106,19 +107,18 @@ def parse_appcast(text):
         elif param == "events":
             ac.events = [e.strip() for e in value.split(ISEP) if e.strip()]
         elif param == "run_warning_total":
-            try:
-                ac.run_warning_total = max(0, int(float(value.strip())))
-            except ValueError:
-                pass
+            n = to_int(value)
+            if n is not None:
+                ac.run_warning_total = max(0, n)
         elif param == "run_warnings":
             for item in value.split(ISEP):
                 item = item.strip()
                 if not item:
                     continue
                 count, _, warning = item.partition(":")
-                try:
-                    n = max(0, int(float(count.strip())))
-                except ValueError:
+                n = to_int(count)
+                if n is None:
                     n, warning = 0, item
+                n = max(0, n)
                 ac.run_warnings[warning.strip()] = n
     return ac

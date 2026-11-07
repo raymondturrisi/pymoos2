@@ -1,4 +1,3 @@
-# Copy to .github/workflows/tests.yml to enable.
 name: tests
 on: [push, pull_request]
 

@@ -1,16 +1,12 @@
-"""
-Base MOOS application lifecycle.
+"""Base MOOS application: configuration, comms and the app loop."""
 
-Manages comms client, app tick loop, mission file config, and ktm listener.
-Subclass and override: on_startup(), on_new_mail(), iterate(), register_variables().
-"""
-
+import fnmatch
 import os
 import socket
 import struct
 import threading
 import time as _wallclock
-import fnmatch
+import traceback
 
 from pymoos2.core.constants import (
     DEFAULT_APP_TICK, DEFAULT_COMMS_TICK,
@@ -26,9 +22,8 @@ from pymoos2.core.MissionReader import MissionReader
 
 
 class MOOSApp:
-    """
-    Base MOOS application. Provides the lifecycle loop and comms plumbing.
-    Subclass this (or AppCastingMOOSApp) and override the callback methods.
+    """Subclass and override on_startup(), register_variables(), on_new_mail()
+    and iterate().
     """
 
     def __init__(self):
@@ -47,6 +42,7 @@ class MOOSApp:
         self.m_comm_tick = DEFAULT_COMMS_TICK
 
         self._running = False
+        self._shut_down = False
         self._suicide_thread = None
 
         self._debug = False
@@ -54,10 +50,16 @@ class MOOSApp:
         self._debug_fname = ""
 
     def config(self, key, default=None, type=str):
-        """Read a parameter from this app's ProcessConfig block."""
+        """Read a parameter from this app's ProcessConfig block (last value wins)."""
         if self.m_mission_reader:
             return self.m_mission_reader.get_config(key, default=default, type=type)
         return default
+
+    def config_lines(self):
+        """All (key, value) lines of this app's ProcessConfig block, in file order."""
+        if self.m_mission_reader:
+            return self.m_mission_reader.get_config_lines()
+        return []
 
     def global_config(self, key, default=None, type=str):
         """Read a global (top-level) mission file parameter."""
@@ -80,13 +82,18 @@ class MOOSApp:
         if self.m_comms:
             self.m_comms.wildcard_register(var_pattern, app_pattern, interval)
 
+    def wildcard_unregister(self, var_pattern, app_pattern="*"):
+        """Drop a wildcard registration."""
+        if self.m_comms:
+            self.m_comms.wildcard_unregister(var_pattern, app_pattern)
+
     def notify(self, key, value, time_val=-1.0, src_aux=""):
         """Publish a MOOS variable."""
         if self.m_comms:
             self.m_comms.notify(key, value, time_val=time_val, src_aux=src_aux)
 
     def dbg_print(self, fmt, *args):
-        """Write a debug line to the timestamped debug file (if debug=true in config)."""
+        """Write a line to the debug file when debug=true is configured."""
         if not self._debug:
             return
         if self._debug_stream is None:
@@ -102,33 +109,50 @@ class MOOSApp:
         self._debug_stream.flush()
 
     def on_startup(self):
-        """Called once after connecting to MOOSDB. Read config here."""
+        """Called once after connecting. Read configuration here."""
         pass
 
     def on_connect_to_server(self):
-        """Called on connection (and reconnection) to MOOSDB. Calls register_variables()."""
+        """Called on every connect and reconnect; calls register_variables()."""
         self.register_variables()
 
     def register_variables(self):
-        """Register MOOS subscriptions. Override this."""
+        """Register subscriptions. Override this."""
         pass
 
     def on_new_mail(self, mail):
-        """Called each iteration with new messages. Override this."""
+        """Called with new mail each iteration. Override this."""
         pass
 
     def iterate(self):
-        """Called each iteration at AppTick frequency. Override this."""
+        """Called at AppTick. Override this."""
+        pass
+
+    def _pre_startup(self):
+        """Hook run before on_startup()."""
+        pass
+
+    def _filter_mail(self, mail):
+        """Hook: return the mail to pass to on_new_mail()."""
+        return mail
+
+    def _post_iterate(self):
+        """Hook run after iterate()."""
+        pass
+
+    def _report_iterate_error(self, err_msg):
         pass
 
     def _initialize(self, app_name, mission_file):
-        """Set app name and mission file path."""
         self.m_app_name = app_name
         self.m_mission_file = mission_file
 
     def _shutdown(self):
-        """Graceful shutdown."""
+        """Shut down; safe to call more than once."""
         self._running = False
+        if self._shut_down:
+            return
+        self._shut_down = True
         if self.m_comms and self.m_comms.is_connected:
             self.m_comms.notify("EXITED_NORMALLY", self.m_app_name)
             _wallclock.sleep(0.2)
@@ -138,7 +162,6 @@ class MOOSApp:
             self._debug_stream.close()
 
     def _run(self):
-        """Read config, connect to MOOSDB, enter app loop."""
         self._running = True
 
         self.m_mission_reader = MissionReader(self.m_mission_file, self.m_app_name)
@@ -149,10 +172,18 @@ class MOOSApp:
             "commstick", default=DEFAULT_COMMS_TICK, type=float)
         self.m_time_warp = self.m_mission_reader.get_value(
             "MOOSTimeWarp", default=1.0, type=float)
+        try:
+            set_moos_time_warp(self.m_time_warp)
+        except ValueError as e:
+            print(f"  ** {self.m_app_name}: {e}; running at time warp 1")
+            self.m_time_warp = 1.0
+            set_moos_time_warp(1.0)
         self._debug = self.m_mission_reader.get_config(
             "debug", default=False, type=bool)
-
-        set_moos_time_warp(self.m_time_warp)
+        if self.m_app_tick <= 0:
+            self.m_app_tick = DEFAULT_APP_TICK
+        if self.m_comm_tick <= 0:
+            self.m_comm_tick = DEFAULT_COMMS_TICK
 
         server_host = self.m_mission_reader.get_value(
             "ServerHost", default=DEFAULT_SERVER_HOST)
@@ -169,7 +200,7 @@ class MOOSApp:
             print(f"  ** WARNING: {self.m_app_name} failed to connect to MOOSDB "
                   f"at {server_host}:{server_port}")
 
-        set_moos_skew(self.m_comms._skew)
+        set_moos_skew(self.m_comms.skew)
 
         self.m_community = self.m_mission_reader.get_value("Community", default="")
         if not self.m_community:
@@ -178,42 +209,41 @@ class MOOSApp:
         self._start_suicide_listener()
 
         self.m_start_time = moos_local_time()
+        self._pre_startup()
         self.on_startup()
         self.on_connect_to_server()
+        self.m_comms.consume_reconnect()
 
         app_period_ms = 1000.0 / self.m_app_tick
         self.m_last_iterate_time = moos_local_time()
 
         while self._running:
+            iter_start = moos_local_time()
             self.m_iteration += 1
 
             try:
-                mail = self.m_comms.fetch()
+                if self.m_comms.consume_reconnect():
+                    set_moos_skew(self.m_comms.skew)
+                    self.on_connect_to_server()
+                mail = self._filter_mail(self.m_comms.fetch())
                 if mail:
                     self.on_new_mail(mail)
                 self.iterate()
                 self._post_iterate()
             except Exception as e:
-                import traceback
                 err_msg = f"{type(e).__name__}: {e}"
                 print(f"  ** {self.m_app_name} error (iter {self.m_iteration}): {err_msg}")
                 traceback.print_exc()
                 self._report_iterate_error(err_msg)
 
-            self.m_last_iterate_time = moos_local_time()
+            self.m_last_iterate_time = iter_start
 
-            elapsed_ms = (moos_local_time() - self.m_last_iterate_time) * 1000.0
+            elapsed_ms = (moos_local_time() - iter_start) * 1000.0
             if elapsed_ms < 0:
                 elapsed_ms = 0
             sleep_ms = app_period_ms - elapsed_ms
             if sleep_ms > 1:
                 moos_pause(sleep_ms)
-
-    def _post_iterate(self):
-        pass
-
-    def _report_iterate_error(self, err_msg):
-        pass
 
     def _print_banner(self, host, port):
         print(f"  {self.m_app_name} (pymoos2)")
@@ -231,7 +261,8 @@ class MOOSApp:
             if self.m_mission_reader else SUICIDE_DEFAULT_PHRASE
 
         self._suicide_thread = threading.Thread(
-            target=self._suicide_loop, args=(phrase,), daemon=True)
+            target=self._suicide_loop, args=(phrase,), daemon=True,
+            name=f"{self.m_app_name}-ktm")
         self._suicide_thread.start()
 
     def _suicide_loop(self, phrase):
@@ -256,7 +287,7 @@ class MOOSApp:
                 parts = msg.split(":")
                 if len(parts) >= 3 and parts[0] == "K":
                     rx_phrase = parts[1]
-                    pattern = parts[2]
+                    pattern = parts[2].strip()
                     if rx_phrase == phrase:
                         if pattern == "*" or fnmatch.fnmatch(self.m_app_name, pattern):
                             print(f"  {self.m_app_name}: received ktm signal, shutting down.")

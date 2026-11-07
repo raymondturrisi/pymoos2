@@ -4,13 +4,8 @@ Column-aligned ASCII tables for AppCast reports.
 
 
 class ACTable:
-    """Build formatted column-aligned tables for buildReport()."""
-
     def __init__(self, columns, pad=2):
-        """
-        columns: list of column header strings, e.g. ["Variable", "Value"]
-        pad:     spaces between columns
-        """
+        """columns: header strings. pad: spaces between columns."""
         self.headers = list(columns)
         self.ncols = len(columns)
         self.pad = pad
@@ -18,7 +13,7 @@ class ACTable:
         self.widths = [len(h) for h in self.headers]
 
     def add(self, *values):
-        """Add a row of values. Number of values should match number of columns."""
+        """Add a row, one value per column."""
         row = [str(v) for v in values]
         while len(row) < self.ncols:
             row.append("")

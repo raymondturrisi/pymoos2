@@ -59,6 +59,8 @@ ProcessConfig = pDoubler
 }
 ```
 
+Posts go out at the next CommsTick; raise CommsTick for lower latency.
+
 ## Building in a moos-ivp tree
 
 Python apps live in `src/` beside the C++ apps and build with the tree's

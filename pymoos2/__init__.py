@@ -11,7 +11,7 @@ from pymoos2.core.time import moos_time, moos_local_time, moos_pause
 import sys
 import signal
 
-__version__ = "1.0.1"
+__version__ = "1.0.2"
 
 
 def run(app_class, app_name, mission_file, install_signal_handlers=True):

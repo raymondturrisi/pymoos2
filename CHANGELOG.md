@@ -1,5 +1,15 @@
 # Changelog
 
+## 1.0.2
+
+- A non-string variable name raises TypeError instead of stopping the comms thread.
+- Message IDs wrap at 2^31.
+- Parsers treat inf and overflowing numbers as invalid.
+- XYPolygon.is_convex() rejects self-intersecting polygons.
+- NodeRecord keeps PITCH and other unknown fields, written in sorted order.
+- get_spec() takes active by keyword only.
+- Package-app launchers no longer need HOME or write a log.
+
 ## 1.0.1
 
 - Shorter README and package description; comments removed from the code.

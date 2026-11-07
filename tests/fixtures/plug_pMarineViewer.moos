@@ -1,0 +1,107 @@
+//--------------------------------------------------------
+ProcessConfig = pMarineViewer
+{
+  AppTick    = 4
+  CommsTick  = 4
+  tiff_file            = MIT_SP.tif
+  tiff_file_b          = MIT_SP.tif
+  set_pan_x            = 100
+  set_pan_y            = -300
+  zoom                 = 1.7
+  //set_pan_x            = 60
+  //set_pan_y            = -320
+  //zoom                 = 1.7
+  vehicles_shape_scale = 1.0
+  vehicles_name_mode   = names
+
+	app_logging = log
+	
+  circle_viewable_all = false
+
+	//content_mode = realmcast
+	realmcast_channel = abe:events
+  appcast_viewable = true
+  
+  appcast_color_scheme = white
+  realmcast_color_scheme = beige
+
+	appcast_font_size    = large
+  procs_font_size      = large
+  nodes_font_size      = large
+
+	watch_cluster = key=messages, vars=NODE_MESSAGE_LOCAL:NODE_MESSAGE
+	watch_cluster = key=contacts, vars=BCM_REPORT_REQUEST:CONTACTS_250:CONTACTS_5000
+	watch_cluster = key=mission, vars=DEPLOY:MOOS_MANUAL_OVERRIDE:RETURN:STATION:MODE
+	watch_cluster = key=life_events, vars=TASK_WPT:IVPHELM_LIFE_EVENT
+
+  vehicles_name_mode = names+depth
+	
+  stale_report_thresh = 10
+  stale_remove_thresh = 18
+
+  scope = PSHARE_INPUT_SUMMARY
+  scope = NODE_BROKER_PING
+  scope = DEPLOY_ALL
+
+  action = STATION_ALL = false
+  action = STATION_ALL = true
+
+	action = TERM_REPORT_INTERVAL_ALL = 0.8
+	action = TERM_REPORT_INTERVAL     = 0.8
+	
+	action = TERM_REPORT_INTERVAL_ALL = 2
+	action = TERM_REPORT_INTERVAL     = 2
+
+	action = COMMS_POLICY_ALL = open
+	action = COMMS_POLICY_ALL = lean
+	action = COMMS_POLICY_ALL = dire
+	
+  right_context[return_point] = RETURN_$[UP_VNAME_CLOSEST] = true
+  right_context[return_point] = RETURN_UPDATES_$[UP_VNAME_CLOSEST] = points=$[XPOS],$[YPOS]
+  right_context[station]      = STATION_$[UP_VNAME_CLOSEST] = true
+
+  button_1 = DEPLOY # DEPLOY_ALL=true # color=light_green
+  button_1 = MOOS_MANUAL_OVERRIDE_ALL=false # LOITER_ALL=false
+  button_1 = RETURN_ALL=false # STATION_ALL=false
+  button_1 = USER_AUTONOMY_ALL=true # SMP_MODE_ALL=DIVE
+
+  button_2 = RETURN # RETURN_ALL=true
+  button_2 = LEADER_ALL=false
+
+  button_3 = SPD_UP # CONVOY_UPDATES_ALL="spd_up=0.1"
+  button_4 = SPD_DWN # CONVOY_UPDATES_ALL="spd_dwn=0.1"
+
+  button_5 = IDF_UP # CONVOY_UPDATES_ALL="idf_up=0.5"
+  button_6 = IDF_DWN # CONVOY_UPDATES_ALL="idf_dwn=0.5"
+
+  button_7 = COUPLED:T # CONVOY_UPDATES_ALL="coupled=true"
+  button_8 = COUPLED:F # CONVOY_UPDATES_ALL="coupled=false"
+
+  button_9 = STATION:T # STATION_ALL=true
+  button_10 = STATION:F # STATION_ALL=false
+
+  button_11 = ALL_STOP  # DEPLOY_ALL=false
+  button_12 = RESUME    # DEPLOY_ALL=true
+	
+  cmd = label=DEPLOY, var=DEPLOY,  sval=true,  receivers=all:$(VNAMES)
+  cmd = label=DEPLOY, var=MOOS_MANUAL_OVERRIDE,  sval=false,  receivers=all:$(VNAMES)
+  cmd = label=DEPLOY, var=AVOID,  sval=true,  receivers=all:$(VNAMES)
+  cmd = label=DEPLOY, var=RETURN,  sval=false,  receivers=all:$(VNAMES)
+  cmd = label=DEPLOY, var=STATION_KEEP,  sval=false,  receivers=all:$(VNAMES)
+
+  cmd = label=RETURN, var=RETURN, sval=true, receivers=all:$(VNAMES)
+  cmd = label=RETURN, var=STATION_KEEP, sval=false, receivers=all:$(VNAMES)
+
+  cmd = label=STATION, var=STATION_KEEP,  sval=true,  receivers=all:$(VNAMES)
+
+  cmd = label=STATION, var=STATION_KEEP,  sval=true,  receivers=all:$(VNAMES)
+}
+
+
+ProcessConfig = uFldDelve                              
+{                                                               
+  AppTick   = 4                                                 
+  CommsTick = 4                                                 
+                                                                
+  rate_frame = 10 // secs (default)                             
+}

@@ -1,0 +1,43 @@
+//*******************************************************
+// Sample mission file exercising reader corner cases
+
+ServerHost = localhost
+ServerPort = 9000
+Community  = shoreside
+
+MOOSTimeWarp = 10
+LatOrigin  = 42.358456   // pavlab
+LongOrigin = -71.087589
+LatOrigin  = 0.0         // a later duplicate must NOT win for globals
+
+//--------------------------------------------------------
+Processconfig = ANTLER
+{
+  MSBetweenLaunches = 100
+  Run = MOOSDB          @ NewConsole = false
+  Run = pViewer        @ NewConsole = false
+}
+
+ProcessConfig = pViewer
+{
+  AppTick    = 10
+  CommsTick  = 20
+
+  basemap = "https://tile.example.com/{z}/{x}/{y}.png//x"   // quoted URL survives
+  basemap = https://tile.example.org/{z}/{x}/{y}.png
+	button_1 = DEPLOY # DEPLOY_ALL=true # color=light_green
+  button_1 = MOOS_MANUAL_OVERRIDE_ALL=false
+  cmd = label=POLY, var=SURVEY_UPDATE, sval={pts={30,-30:-25,-30}, label=H}, receivers=all
+  cmd = label=TWO, var=X, sval={a=1,b=2}, receivers=all
+  Vehicles_Name_Mode = names
+  vehicles_name_mode = names+depth
+  right_context[Return_Point] = RETURN_$[UP_VNAME_CLOSEST] = true
+  rate_frame = 10 // secs (default)
+  empty_value =
+}
+
+ProcessConfig = uFldDelve
+{
+  AppTick   = 4
+  CommsTick = 4
+}

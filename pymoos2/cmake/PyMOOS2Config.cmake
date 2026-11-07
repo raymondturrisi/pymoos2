@@ -69,8 +69,6 @@ function(pymoos2_add_package_app)
 
   set(APP_NAME ${A_NAME})
   set(PKG_NAME ${A_PACKAGE})
-  string(TOUPPER "${A_NAME}" APP_NAME_UPPER)
-  string(REGEX REPLACE "[^A-Z0-9_]" "_" APP_NAME_UPPER "${APP_NAME_UPPER}")
 
   set(PKG_ROOT_LINE "PKG_ROOT=\"${src}\"")
   configure_file("${PYMOOS2_CMAKE_DIR}/launcher.sh.in" "${CMAKE_CURRENT_BINARY_DIR}/${A_NAME}" @ONLY)

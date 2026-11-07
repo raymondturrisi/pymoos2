@@ -1,6 +1,5 @@
 #!/bin/sh
-# @APP_NAME@ launcher. PYMOOS2_PYTHON_OVERRIDE changes the interpreter; when stderr
-# is not a terminal it goes to ${@APP_NAME_UPPER@_LOG_DIR:-~/.@APP_NAME@}/launch.log.
+# @APP_NAME@ launcher. PYMOOS2_PYTHON_OVERRIDE changes the interpreter.
 PY="${PYMOOS2_PYTHON_OVERRIDE:-@PYMOOS2_PYTHON@}"
 @PKG_ROOT_LINE@
 export PYTHONPATH="$PKG_ROOT${PYTHONPATH:+:$PYTHONPATH}"
@@ -8,9 +7,4 @@ SAFE=""
 if "$PY" -P -c "" 2>/dev/null; then
   SAFE="-P"
 fi
-if [ -t 2 ]; then
-  exec "$PY" $SAFE -m @PKG_NAME@ "$@"
-fi
-LOG_DIR="${@APP_NAME_UPPER@_LOG_DIR:-$HOME/.@APP_NAME@}"
-mkdir -p "$LOG_DIR" 2>/dev/null
-exec "$PY" $SAFE -m @PKG_NAME@ "$@" 2>>"$LOG_DIR/launch.log"
+exec "$PY" $SAFE -m @PKG_NAME@ "$@"

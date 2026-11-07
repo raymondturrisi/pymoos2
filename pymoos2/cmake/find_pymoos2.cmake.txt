@@ -1,0 +1,18 @@
+#=======================================================================
+# Find pymoos2 (Python MOOS apps)
+#   Python: -DPYMOOS2_PYTHON, the active venv, ../venv, or python3 on PATH
+#=======================================================================
+find_program(PYMOOS2_PYTHON NAMES python3 python
+             HINTS ENV VIRTUAL_ENV "${CMAKE_SOURCE_DIR}/../venv" PATH_SUFFIXES bin)
+execute_process(COMMAND "${PYMOOS2_PYTHON}" -m pymoos2 --cmake-dir
+                OUTPUT_VARIABLE PyMOOS2_DIR OUTPUT_STRIP_TRAILING_WHITESPACE ERROR_QUIET)
+find_package(PyMOOS2 QUIET)
+if(NOT PyMOOS2_FOUND)
+  message(WARNING "pymoos2 is not importable with ${PYMOOS2_PYTHON} - Python apps will not be built. "
+                  "pip install pymoos2 there, or configure with -DPYMOOS2_PYTHON=<python>.")
+  unset(PYMOOS2_PYTHON CACHE)
+  function(pymoos2_add_script_app)
+  endfunction()
+  function(pymoos2_add_package_app)
+  endfunction()
+endif()

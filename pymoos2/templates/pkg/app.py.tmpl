@@ -1,0 +1,48 @@
+"""
+{{APP_NAME}} — the MOOS application class behind {{PREFIX}}{{APP_NAME}}.
+Author: {{AUTHOR}}
+"""
+
+from pymoos2 import AppCastingMOOSApp, ACTable, moos_time
+
+
+class {{APP_NAME}}(AppCastingMOOSApp):
+    SYNOPSIS = "A brief description of what {{PREFIX}}{{APP_NAME}} does."
+
+    VERSION = "0.1.0"
+
+    SUBSCRIPTIONS = [
+    ]
+
+    PUBLICATIONS = [
+    ]
+
+    EXAMPLE_CONFIG = """\
+ProcessConfig = {{PREFIX}}{{APP_NAME}}
+{
+    AppTick   = 4
+    CommsTick = 4
+
+    // debug = true     // write a DBG_{{PREFIX}}{{APP_NAME}}_<time>_DATA.dbg file via dbg_print
+    // my_param = 0.0
+}"""
+
+    def __init__(self):
+        super().__init__()
+
+    def on_startup(self):
+        pass
+
+    def register_variables(self):
+        pass
+
+    def on_new_mail(self, mail):
+        for msg in mail:
+            pass
+
+    def iterate(self):
+        pass
+
+    def build_report(self):
+        self.report("No report configured.")
+        return True

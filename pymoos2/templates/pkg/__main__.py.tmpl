@@ -1,0 +1,107 @@
+"""
+Entry point for {{PREFIX}}{{APP_NAME}}.
+
+pAntler runs:   {{PREFIX}}{{APP_NAME}} <mission.moos> [<alias>]
+By hand:        python -m {{PKG_NAME}} <mission.moos> [--alias=<name>] [-h|-e|-i|-v]
+"""
+
+import os
+import sys
+
+from pymoos2 import run
+from {{PKG_NAME}}.app import {{APP_NAME}}
+
+PROC_NAME = "{{PREFIX}}{{APP_NAME}}"
+
+
+def show_help():
+    print(
+        f"{'=' * 60}\n"
+        f"Usage: {PROC_NAME} file.moos [OPTIONS]\n"
+        f"{'=' * 60}\n"
+        f"\n"
+        f"SYNOPSIS:\n"
+        f"  {{{APP_NAME}}.SYNOPSIS}\n"
+        f"\n"
+        f"Options:\n"
+        f"  --alias=<ProcessName>\n"
+        f"      Launch {PROC_NAME} with the given process name.\n"
+        f"  --example, -e\n"
+        f"      Display example MOOS configuration block.\n"
+        f"  --help, -h\n"
+        f"      Display this help message.\n"
+        f"  --interface, -i\n"
+        f"      Display MOOS publications and subscriptions.\n"
+        f"  --version, -v\n"
+        f"      Display release version.\n"
+        f"\n"
+        f"Note: a second positional argument is taken as the run alias,\n"
+        f"      which is how pAntler launches apps."
+    )
+
+
+def show_interface():
+    subs = "\n".join(f"  {s}" for s in {{APP_NAME}}.SUBSCRIPTIONS)
+    pubs = "\n".join(f"  {p}" for p in {{APP_NAME}}.PUBLICATIONS)
+    print(
+        f"{'=' * 60}\n"
+        f"Interface for: {PROC_NAME}\n"
+        f"{'=' * 60}\n"
+        f"\n"
+        f"SUBSCRIPTIONS:\n"
+        f"{subs}\n"
+        f"\n"
+        f"PUBLICATIONS:\n"
+        f"{pubs}"
+    )
+
+
+def parse_args(argv):
+    """Returns (mission_file, alias, action) where action is None or a flag name."""
+    mission = None
+    alias = PROC_NAME
+    positionals = []
+    for arg in argv:
+        if arg in ("--help", "-h"):
+            return None, alias, "help"
+        if arg in ("--example", "-e"):
+            return None, alias, "example"
+        if arg in ("--interface", "-i"):
+            return None, alias, "interface"
+        if arg in ("--version", "-v"):
+            return None, alias, "version"
+        if arg.startswith("--alias="):
+            alias = arg[len("--alias="):]
+        elif not arg.startswith("-"):
+            positionals.append(arg)
+    if positionals:
+        mission = positionals[0]
+    if len(positionals) > 1:
+        alias = positionals[1]
+    return mission, alias, None
+
+
+def main(argv=None):
+    argv = sys.argv[1:] if argv is None else argv
+    mission, alias, action = parse_args(argv)
+    if action == "help" or (action is None and mission is None):
+        show_help()
+        return 0
+    if action == "example":
+        print({{APP_NAME}}.EXAMPLE_CONFIG)
+        return 0
+    if action == "interface":
+        show_interface()
+        return 0
+    if action == "version":
+        print(f"{PROC_NAME} v{{{APP_NAME}}.VERSION} (pymoos2)")
+        return 0
+    if not os.path.isfile(mission):
+        sys.stderr.write(f"{PROC_NAME}: mission file not found: {mission}\n")
+        return 2
+    run({{APP_NAME}}, alias, mission)
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

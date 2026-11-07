@@ -25,6 +25,7 @@ Processconfig = ANTLER
   Run = pHostInfo      @ NewConsole = false
   Run = uFldNodeBroker @ NewConsole = false
   Run = pWptPulse      @ NewConsole = false
+  Run = pFrameMonitor  @ NewConsole = false
 }
   
 #include plugs.moos <pShare>
@@ -172,4 +173,16 @@ ProcessConfig = pWptPulse
   pulse_radius   = 30.0
   pulse_color    = yellow
   pulse_duration = 4.0
+}
+
+//------------------------------------------------
+// pFrameMonitor config block
+
+ProcessConfig = pFrameMonitor
+{
+  AppTick   = 1
+  CommsTick = 4
+
+  projection  = utm
+  publish_var = FRAME_DISTORTION
 }

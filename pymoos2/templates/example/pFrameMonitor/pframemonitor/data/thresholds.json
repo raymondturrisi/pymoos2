@@ -1,0 +1,6 @@
+{
+  "scale_ppm": 500.0,
+  "convergence_deg": 2.0,
+  "range_error_m": 5.0,
+  "bearing_error_deg": 2.0
+}

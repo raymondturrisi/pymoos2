@@ -8,10 +8,9 @@ import json
 import threading
 import time
 import webbrowser
+from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
-from flask import Flask, Response
-
-from pymoos2 import AppCastingMOOSApp, ACTable, moos_time
+from pymoos2 import AppCastingMOOSApp, ACTable, moos_time, assets
 from pymoos2.dtos.contacts.NodeRecord import NodeRecord
 
 
@@ -19,7 +18,7 @@ class NodeWatch(AppCastingMOOSApp):
     SYNOPSIS = (
         "Subscribes to NODE_REPORT on the shoreside and serves a minimal "
         "web page showing a scrolling log of vehicle state. Demonstrates "
-        "pymoos2 with Flask for browser-based monitoring."
+        "pymoos2 with Python's built-in web server; no extra packages."
     )
 
     VERSION = "0.1.0"
@@ -97,38 +96,49 @@ ProcessConfig = pNodeWatch
         return True
 
     def _start_web_server(self):
-        app = Flask(__name__, static_folder=None)
         viewer = self
 
-        @app.route("/")
-        def index():
-            return PAGE_HTML
+        class Handler(BaseHTTPRequestHandler):
+            def do_GET(self):
+                if self.path == "/":
+                    body, ctype = PAGE_HTML.encode(), "text/html; charset=utf-8"
+                elif self.path in ICONS:
+                    name, ctype = ICONS[self.path]
+                    with open(assets.path(name), "rb") as f:
+                        body = f.read()
+                elif self.path == "/api/reports":
+                    with viewer.reports_lock:
+                        body = json.dumps(viewer.reports).encode()
+                    ctype = "application/json"
+                else:
+                    self.send_error(404)
+                    return
+                self.send_response(200)
+                self.send_header("Content-Type", ctype)
+                self.send_header("Content-Length", str(len(body)))
+                self.end_headers()
+                self.wfile.write(body)
 
-        @app.route("/api/reports")
-        def reports():
-            with viewer.reports_lock:
-                data = list(viewer.reports)
-            return Response(json.dumps(data), mimetype="application/json")
+            def log_message(self, *args):
+                pass
 
-        import logging
-        logging.getLogger("werkzeug").setLevel(logging.ERROR)
+        server = ThreadingHTTPServer(("0.0.0.0", self.web_port), Handler)
+        threading.Thread(target=server.serve_forever, daemon=True).start()
 
-        t = threading.Thread(
-            target=lambda: app.run(host="0.0.0.0", port=self.web_port,
-                                   debug=False, use_reloader=False),
-            daemon=True)
-        t.start()
 
+ICONS = {"/favicon.ico": ("favicon.ico", "image/x-icon"),
+         "/mark.svg": ("pymoos2-mark.svg", "image/svg+xml")}
 
 PAGE_HTML = """<!DOCTYPE html>
 <html>
 <head>
 <meta charset="utf-8">
 <title>pNodeWatch</title>
+<link rel="icon" href="/favicon.ico">
 <style>
 * { margin:0; padding:0; box-sizing:border-box; }
 body { background:#1a1a1a; color:#e0e0e0; font-family:'Menlo','Consolas',monospace; font-size:12px; }
-#header { padding:10px 16px; background:#252525; border-bottom:1px solid #333; font-size:14px; font-weight:bold; color:#4CAF50; }
+#header { display:flex; align-items:center; gap:10px; padding:10px 16px; background:#252525; border-bottom:1px solid #333; font-size:14px; font-weight:bold; color:#4CAF50; }
 #log { padding:8px 16px; }
 .row { padding:2px 0; border-bottom:1px solid #222; display:flex; gap:12px; }
 .row:hover { background:#252525; }
@@ -140,7 +150,7 @@ body { background:#1a1a1a; color:#e0e0e0; font-family:'Menlo','Consolas',monospa
 </style>
 </head>
 <body>
-<div id="header">pNodeWatch</div>
+<div id="header"><img src="/mark.svg" alt="" width="28" height="28">pNodeWatch</div>
 <div id="log"></div>
 <div id="status">Connecting...</div>
 <script>

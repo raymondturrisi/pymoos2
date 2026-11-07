@@ -4,7 +4,6 @@
 """
 
 import sys
-import webbrowser
 from pymoos2 import run
 from WptPulse import WptPulse
 
@@ -31,8 +30,6 @@ def show_help():
         f"      Display MOOS publications and subscriptions.\n"
         f"  --version, -v\n"
         f"      Display release version.\n"
-        f"  --web, -w\n"
-        f"      Open pymoos2 on PyPI in browser.\n"
         f"\n"
         f"Note: If argv[2] does not otherwise match a known option,\n"
         f"      then it will be interpreted as a run alias. This is\n"
@@ -82,12 +79,14 @@ def main():
     elif arg in ("--version", "-v"):
         show_version()
         return
-    elif arg in ("--web", "-w"):
-        webbrowser.open("https://pypi.org/project/pymoos2/")
-        return
 
     mission_file = sys.argv[1]
-    app_name = sys.argv[2] if len(sys.argv) > 2 else PROC_NAME
+    app_name = PROC_NAME
+    for extra in sys.argv[2:]:
+        if extra.startswith("--alias="):
+            app_name = extra[len("--alias="):]
+        elif not extra.startswith("-"):
+            app_name = extra
 
     run(WptPulse, app_name, mission_file)
 

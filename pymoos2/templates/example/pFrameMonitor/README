@@ -1,0 +1,15 @@
+pFrameMonitor (pymoos2 example)
+
+Publishes the local frame's distortion at the vehicle (FRAME_DISTORTION) and
+raises an appcast run warning past the thresholds in data/thresholds.json.
+
+  pFrameMonitor/
+    CMakeLists.txt
+    pframemonitor/          installed
+      __init__.py  __main__.py  app.py
+      frames/  metrics/  data/thresholds.json
+    tests/                  not installed
+
+  pFrameMonitor targ.moos        run
+  pFrameMonitor -e               example config
+  python -m pytest tests         unit tests

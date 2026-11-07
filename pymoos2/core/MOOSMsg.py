@@ -1,14 +1,29 @@
-"""
-MOOS message class with binary serialization.
+"""MOOS message and its binary encoding.
+
+Text is UTF-8 with surrogateescape, so any bytes round-trip unchanged.
 """
 
+import itertools
 import struct
 
 from pymoos2.core.constants import (
-    MSG_NOTIFY, MSG_NULL, MSG_NOT_SET,
+    MSG_NOT_SET,
     DATA_DOUBLE, DATA_STRING, DATA_BINARY,
 )
 from pymoos2.core.time import moos_time
+
+_ID_COUNTER = itertools.count()
+_ENC = "utf-8"
+_ERR = "surrogateescape"
+_MIN_MSG_BYTES = 4 + 4 + 2 + 4 * 4 + 24 + 4
+
+
+def _text(b):
+    return bytes(b).decode(_ENC, _ERR)
+
+
+def _bytes(s):
+    return s if isinstance(s, (bytes, bytearray)) else s.encode(_ENC, _ERR)
 
 
 class MOOSMsg:
@@ -18,31 +33,36 @@ class MOOSMsg:
         "sval", "src", "src_aux", "community",
     )
 
-    _next_id = 0
-
     def __init__(self, msg_type=MSG_NOT_SET, key="", val=0.0, sval="",
-                 src="", time=-1.0):
+                 src="", time=-1.0, data_type=None):
+        """data_type defaults from data: a non-empty str is a string, non-empty
+        bytes are binary, anything else is a double. Pass DATA_STRING to send an
+        empty string.
+        """
         self.msg_type = msg_type
         self.key = key
         self.src = src
         self.src_aux = ""
         self.community = ""
-        self.msg_id = MOOSMsg._next_id
-        MOOSMsg._next_id += 1
+        self.msg_id = next(_ID_COUNTER)
         self.time = time if time >= 0 else moos_time()
         self.val2 = 0.0
+        self.val = float(val)
 
-        if isinstance(sval, str) and sval:
-            self.data_type = DATA_STRING
-            self.val = val
-            self.sval = sval
-        elif isinstance(sval, (bytes, bytearray)) and sval:
-            self.data_type = DATA_BINARY
-            self.val = val
-            self.sval = sval
+        if data_type is None:
+            if isinstance(sval, str) and sval:
+                data_type = DATA_STRING
+            elif isinstance(sval, (bytes, bytearray)) and sval:
+                data_type = DATA_BINARY
+            else:
+                data_type = DATA_DOUBLE
+        self.data_type = data_type
+
+        if data_type == DATA_STRING:
+            self.sval = sval if isinstance(sval, str) else _text(sval)
+        elif data_type == DATA_BINARY:
+            self.sval = bytes(sval) if sval else b""
         else:
-            self.data_type = DATA_DOUBLE
-            self.val = val
             self.sval = ""
 
     @property
@@ -53,10 +73,10 @@ class MOOSMsg:
         return self.val
 
     def string(self):
-        return self.sval if isinstance(self.sval, str) else self.sval.decode()
+        return self.sval if isinstance(self.sval, str) else _text(self.sval)
 
     def binary_data(self):
-        return self.sval if isinstance(self.sval, bytes) else self.sval.encode()
+        return self.sval if isinstance(self.sval, bytes) else _bytes(self.sval)
 
     def source(self):
         return self.src
@@ -75,64 +95,76 @@ class MOOSMsg:
 
     @staticmethod
     def _pack_string(s):
-        """Length-prefixed string: [4-byte len][raw bytes]."""
-        if isinstance(s, str):
-            s = s.encode()
+        s = _bytes(s)
         return struct.pack("<i", len(s)) + s
 
     @staticmethod
-    def _unpack_string(buf, offset):
-        """Returns (string_bytes, new_offset)."""
+    def _unpack_string(buf, offset, end):
         (length,) = struct.unpack_from("<i", buf, offset)
         offset += 4
-        data = buf[offset:offset + length]
-        offset += length
-        return data, offset
+        if length < 0 or offset + length > end:
+            raise ValueError(f"string field of {length} bytes runs past the message")
+        return bytes(buf[offset:offset + length]), offset + length
 
     def serialize(self):
-        """Serialize this message to bytes (matches CMOOSMsg::Serialize TO_STREAM)."""
-        payload = struct.pack("<i", self.msg_id)
-        payload += struct.pack("<BB", self.msg_type, self.data_type)
-        payload += self._pack_string(self.src)
-        payload += self._pack_string(self.src_aux)
-        payload += self._pack_string(self.community)
-        payload += self._pack_string(self.key)
-        payload += struct.pack("<3d", self.time, self.val, self.val2)
-        sval_bytes = self.sval if isinstance(self.sval, bytes) else self.sval.encode()
-        payload += self._pack_string(sval_bytes)
+        """Encode as bytes."""
+        sval_bytes = _bytes(self.sval)
+        payload = b"".join((
+            struct.pack("<i", self.msg_id),
+            struct.pack("<BB", self.msg_type, self.data_type),
+            self._pack_string(self.src),
+            self._pack_string(self.src_aux),
+            self._pack_string(self.community),
+            self._pack_string(self.key),
+            struct.pack("<3d", self.time, self.val, self.val2),
+            self._pack_string(sval_bytes),
+        ))
         return struct.pack("<i", len(payload) + 4) + payload
 
     @classmethod
     def deserialize(cls, buf, offset=0):
-        """Deserialize a message from buf at offset. Returns (MOOSMsg, new_offset)."""
+        """Decode the message at offset; returns (msg, new_offset). Raises
+        ValueError on malformed data.
+        """
         start = offset
-        (total_len,) = struct.unpack_from("<i", buf, offset); offset += 4
-        (msg_id,) = struct.unpack_from("<i", buf, offset); offset += 4
-        (msg_type, data_type) = struct.unpack_from("<BB", buf, offset); offset += 2
+        try:
+            (total_len,) = struct.unpack_from("<i", buf, offset)
+            end = start + total_len
+            if total_len < _MIN_MSG_BYTES or end > len(buf):
+                raise ValueError(f"message length {total_len} does not fit the {len(buf) - start} bytes left")
+            offset += 4
+            (msg_id,) = struct.unpack_from("<i", buf, offset); offset += 4
+            (msg_type, data_type) = struct.unpack_from("<BB", buf, offset); offset += 2
 
-        src, offset = cls._unpack_string(buf, offset)
-        src_aux, offset = cls._unpack_string(buf, offset)
-        community, offset = cls._unpack_string(buf, offset)
-        key, offset = cls._unpack_string(buf, offset)
+            src, offset = cls._unpack_string(buf, offset, end)
+            src_aux, offset = cls._unpack_string(buf, offset, end)
+            community, offset = cls._unpack_string(buf, offset, end)
+            key, offset = cls._unpack_string(buf, offset, end)
 
-        (time_val, val, val2) = struct.unpack_from("<3d", buf, offset); offset += 24
+            if offset + 24 > end:
+                raise ValueError("message ends inside its numeric fields")
+            (time_val, val, val2) = struct.unpack_from("<3d", buf, offset); offset += 24
 
-        sval, offset = cls._unpack_string(buf, offset)
+            sval, offset = cls._unpack_string(buf, offset, end)
+        except struct.error as e:
+            raise ValueError(f"truncated message: {e}") from None
+        if data_type not in (DATA_DOUBLE, DATA_STRING, DATA_BINARY):
+            raise ValueError(f"unknown data type {data_type!r}")
 
         msg = cls.__new__(cls)
         msg.msg_type = msg_type
         msg.data_type = data_type
-        msg.key = key.decode()
+        msg.key = _text(key)
         msg.msg_id = msg_id
         msg.time = time_val
         msg.val = val
         msg.val2 = val2
-        msg.src = src.decode()
-        msg.src_aux = src_aux.decode()
-        msg.community = community.decode()
-        msg.sval = sval if data_type == DATA_BINARY else sval.decode()
+        msg.src = _text(src)
+        msg.src_aux = _text(src_aux)
+        msg.community = _text(community)
+        msg.sval = sval if data_type == DATA_BINARY else _text(sval)
 
-        return msg, start + total_len
+        return msg, end
 
     def __repr__(self):
         dtype = {DATA_DOUBLE: "D", DATA_STRING: "S", DATA_BINARY: "B"}.get(self.data_type, "?")

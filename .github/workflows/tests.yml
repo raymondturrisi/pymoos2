@@ -1,5 +1,8 @@
 name: tests
-on: [push, pull_request]
+on:
+  push:
+    branches: [main]
+  pull_request:
 
 jobs:
   build:
@@ -23,6 +26,11 @@ jobs:
         python: ["3.8", "3.9", "3.10", "3.11", "3.12", "3.13", "3.14"]
         exclude:
           - {os: macos-latest, python: "3.8"}
+          - {os: ubuntu-latest, python: "3.8"}
+          - {os: ubuntu-latest, python: "3.9"}
+        include:
+          - {os: ubuntu-22.04, python: "3.8"}
+          - {os: ubuntu-22.04, python: "3.9"}
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
@@ -30,7 +38,7 @@ jobs:
         with: {python-version: "${{ matrix.python }}", allow-prereleases: true}
       - uses: actions/download-artifact@v4
         with: {name: dist, path: dist/}
-      - run: python -m pip install dist/*.whl pytest numpy
+      - run: python -m pip install dist/*.whl pytest numpy pytest-github-actions-annotate-failures
       - name: test the installed wheel, not the checkout
         run: |
           mkdir ../t && cp -r tests ../t/

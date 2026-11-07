@@ -152,7 +152,7 @@ class XYObject:
     def valid(self):
         return True
 
-    def get_spec(self, active=None):
+    def get_spec(self, *, active=None):
         return self._join([], active)
 
     def get_spec_inactive(self):

@@ -78,7 +78,7 @@ class XYRangePulse(XYObject):
             return False
         return True
 
-    def get_spec(self, active=None):
+    def get_spec(self, *, active=None):
         parts = [f"x={double_to_string_x(self.x, 2)}", f"y={double_to_string_x(self.y, 2)}",
                  f"radius={double_to_string_x(self.radius, 2)}", f"fill={double_to_string_x(self.fill, 2)}"]
         if self.linger:

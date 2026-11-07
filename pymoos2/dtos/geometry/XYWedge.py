@@ -51,7 +51,7 @@ class XYWedge(XYObject):
             return True
         return False
 
-    def get_spec(self, active=None):
+    def get_spec(self, *, active=None):
         parts = [f"x={double_to_string(self.x, 2)}", f"y={double_to_string(self.y, 2)}",
                  f"rad_low={double_to_string_x(self.rad_low, 2)}", f"rad_hgh={double_to_string_x(self.rad_hgh, 2)}",
                  f"ang_low={double_to_string_x(self.ang_low, 2)}", f"ang_hgh={double_to_string_x(self.ang_hgh, 2)}"]

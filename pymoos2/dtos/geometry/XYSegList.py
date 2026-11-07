@@ -105,7 +105,7 @@ class XYSegList(XYObject):
             parts.append(tags)
         return parts
 
-    def get_spec(self, precision=None, active=None):
+    def get_spec(self, precision=None, *, active=None):
         return self._join(self._own_parts(precision), active)
 
     def _inactive_parts(self):

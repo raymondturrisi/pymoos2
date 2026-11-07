@@ -42,7 +42,7 @@ class XYSeglr(XYSegList):
             return False
         return True
 
-    def get_spec(self, precision=1, active=None):
+    def get_spec(self, precision=1, *, active=None):
         pts = ":".join(double_to_string(x, precision) + "," + double_to_string(y, precision)
                        for x, y in zip(self.vx, self.vy))
         parts = ["pts={" + pts + "}", "ray=" + double_to_string(self.ray, precision)]

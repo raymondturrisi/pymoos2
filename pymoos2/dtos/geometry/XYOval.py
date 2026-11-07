@@ -61,7 +61,7 @@ class XYOval(XYObject):
             return False
         return True
 
-    def get_spec(self, active=None):
+    def get_spec(self, *, active=None):
         parts = [f"x={double_to_string_x(self.x, 2)}", f"y={double_to_string_x(self.y, 2)}",
                  f"rad={double_to_string_x(self.rad, 2)}", f"len={double_to_string_x(self.length, 2)}",
                  f"ang={double_to_string_x(self.ang, 2)}", f"draw_degs={double_to_string_x(self.draw_degs, 1)}"]

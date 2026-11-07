@@ -62,7 +62,7 @@ class XYCommsPulse(XYObject):
             return False
         return True
 
-    def get_spec(self, active=None):
+    def get_spec(self, *, active=None):
         parts = [f"sx={double_to_string_x(self.sx, 2)}", f"sy={double_to_string_x(self.sy, 2)}",
                  f"tx={double_to_string_x(self.tx, 2)}", f"ty={double_to_string_x(self.ty, 2)}",
                  f"beam_width={double_to_string_x(self.beam_width, 2)}",

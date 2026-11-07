@@ -45,17 +45,20 @@ class XYPolygon(XYSegList):
         n = len(self.vx)
         if n < 3:
             return False
-        sign = 0
         for i in range(n):
             x0, y0 = self.vx[i], self.vy[i]
             x1, y1 = self.vx[(i + 1) % n], self.vy[(i + 1) % n]
-            x2, y2 = self.vx[(i + 2) % n], self.vy[(i + 2) % n]
-            cross = (x1 - x0) * (y2 - y1) - (y1 - y0) * (x2 - x1)
-            if cross != 0:
+            side = 0
+            for j in range(n):
+                if j in (i, (i + 1) % n):
+                    continue
+                cross = (x1 - x0) * (self.vy[j] - y0) - (y1 - y0) * (self.vx[j] - x0)
+                if cross == 0:
+                    continue
                 s = 1 if cross > 0 else -1
-                if sign == 0:
-                    sign = s
-                elif s != sign:
+                if side == 0:
+                    side = s
+                elif s != side:
                     return False
         return True
 

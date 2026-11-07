@@ -63,7 +63,7 @@ class XYTextBox(XYObject):
             obj.duration = 1.0
         return obj
 
-    def get_spec(self, active=None):
+    def get_spec(self, *, active=None):
         parts = [f"x={double_to_string_x(self.x, 2)}", f"y={double_to_string_x(self.y, 2)}"]
         parts += [f'msg="{m}"' for m in self.messages]
         parts.append(f"fsize={self.fsize}")

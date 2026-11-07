@@ -56,7 +56,7 @@ class XYArrow(XYObject):
             return True
         return False
 
-    def get_spec(self, active=None):
+    def get_spec(self, *, active=None):
         parts = [f"ctrx={double_to_string_x(self.ctrx, 2)}", f"ctry={double_to_string_x(self.ctry, 2)}",
                  f"ang={double_to_string_x(self.ang, 2)}", f"bwid={double_to_string_x(self.bwid, 2)}",
                  f"blen={double_to_string_x(self.blen, 2)}", f"hwid={double_to_string_x(self.hwid, 2)}",

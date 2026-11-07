@@ -13,6 +13,7 @@ from pymoos2.core.constants import (
 from pymoos2.core.time import moos_time
 
 _ID_COUNTER = itertools.count()
+_ID_LIMIT = 2 ** 31
 _ENC = "utf-8"
 _ERR = "surrogateescape"
 _MIN_MSG_BYTES = 4 + 4 + 2 + 4 * 4 + 24 + 4
@@ -44,7 +45,9 @@ class MOOSMsg:
         self.src = src
         self.src_aux = ""
         self.community = ""
-        self.msg_id = next(_ID_COUNTER)
+        if not isinstance(key, str):
+            raise TypeError(f"MOOS variable name must be str, not {type(key).__name__}")
+        self.msg_id = next(_ID_COUNTER) % _ID_LIMIT
         self.time = time if time >= 0 else moos_time()
         self.val2 = 0.0
         self.val = float(val)

@@ -119,6 +119,8 @@ class MOOSCommClient:
         bool posts "true"/"false", real numbers post doubles, bytes post binary
         and str posts a string. Other types raise TypeError.
         """
+        if not isinstance(key, str):
+            raise TypeError(f"MOOS variable name must be str, not {type(key).__name__}")
         if not key:
             raise ValueError("notify needs a variable name")
         if isinstance(value, bool) or getattr(getattr(value, "dtype", None), "kind", "") == "b":

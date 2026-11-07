@@ -349,3 +349,48 @@ def test_package_exports():
     for name in pymoos2.__all__:
         assert hasattr(pymoos2, name), name
     assert pymoos2.__version__ == "1.0.1"
+
+
+def test_non_string_variable_name_is_refused_on_the_calling_thread():
+    client = MOOSCommClient("localhost", 9000, "pTest")
+    for bad in (123, None, b"X"):
+        with pytest.raises(TypeError):
+            client.notify(bad, 1.0)
+        with pytest.raises(TypeError):
+            client.register(bad)
+    assert client._outbox == []
+
+
+def test_message_ids_wrap_instead_of_overflowing(monkeypatch):
+    import itertools
+    from pymoos2.core import MOOSMsg as msg_mod
+    monkeypatch.setattr(msg_mod, "_ID_COUNTER", itertools.count(2 ** 31 - 1))
+    first, second = MOOSMsg(MSG_NOTIFY, "X", val=1.0), MOOSMsg(MSG_NOTIFY, "X", val=2.0)
+    assert (first.msg_id, second.msg_id) == (2 ** 31 - 1, 0)
+    for m in (first, second):
+        back, _ = MOOSMsg.deserialize(m.serialize())
+        assert back.msg_id == m.msg_id
+
+
+@pytest.mark.parametrize("big", ["inf", "-inf", "1e400", "nan"])
+def test_parsers_never_raise_on_non_finite_numbers(big):
+    from pymoos2.casts import parse_appcast
+    from pymoos2.casts.realmcast import parse_realmcast
+    from pymoos2.dtos.contacts.NodeRecord import NodeRecord
+    from pymoos2.dtos.geometry import parse_view
+    parse_appcast(f"proc=p!@#iter={big}!@#node=n!@#run_warning_total={big}!@#run_warnings={big}:w")
+    parse_realmcast(f"node=n!Q!proc=p!Q!count={big}!Q!messages=a!Z!")
+    rec = NodeRecord.from_spec(f"NAME=a,X={big},Y=2,SPD=1,HDG=0,INDEX={big},LENGTH={big}")
+    assert not rec.has("x") or rec.x == rec.x
+    for var, spec in [
+        ("VIEW_CIRCLE", f"x=0,y=0,radius=5,vertices={big}"),
+        ("VIEW_TEXTBOX", f"x=0,y=0,msg=hi,fsize={big}"),
+        ("VIEW_TEXTBOX", f"x=0,y=0,msg=hi,{big}"),
+        ("VIEW_POLYGON", f"format=radial,x=0,y=0,radius=10,pts={big}"),
+        ("VIEW_POLYGON", f"format=ellipse,x=0,y=0,major=10,minor=5,degs=0,pts={big}"),
+        ("VIEW_POLYGON", f"format=wedge,x=0,y=0,lang=0,rang=90,range=10,pts={big}"),
+        ("VIEW_POLYGON", f"format=rangewedge,x=0,y=0,lang=0,rang=90,range_min=1,range_max=10,pts={big}"),
+        ("VIEW_POLYGON", f"radial:0,0,10,{big}"),
+        ("VIEW_OVAL", f"x=0,y=0,rad=5,len=10,ang=0,draw_degs={big}"),
+    ]:
+        parse_view(var, spec)

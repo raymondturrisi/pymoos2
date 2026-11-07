@@ -227,9 +227,10 @@ def test_cmake_generated_apps_build_install_and_relocate(tmp_path, monkeypatch):
     assert _same(script.read_text().splitlines()[0][2:], PY) and (tmp_path / "bin" / "Thing.py").is_file()
     assert "pThing v" in run([str(script), "--version"]).stdout
 
-    env = dict(os.environ, PPROBE_LOG_DIR=str(tmp_path / "logs"))
-    run([str(launcher), str(tmp_path / "missing.moos")], env=env)
-    assert "mission file not found" in (tmp_path / "logs" / "launch.log").read_text()
+    r = run([str(launcher), str(tmp_path / "missing.moos")])
+    assert r.returncode == 2 and "mission file not found" in r.stderr
+    no_home = {k: v for k, v in os.environ.items() if k != "HOME"}
+    assert run([str(launcher), "--version"], env=no_home).stdout.strip() == "pProbe v0.1.0 (pymoos2)"
 
     prefix = tmp_path / "prefix"
     r = run([CMAKE, "--install", str(build), "--prefix", str(prefix)])

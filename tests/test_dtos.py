@@ -193,3 +193,23 @@ def test_vehicle_type_helpers():
     assert normalize_vehicle_type("spurdog") == "ship"
     assert default_vehicle_length("auv") == 3.0 and default_vehicle_length("ship") == 12.0
     assert default_vehicle_length("bcrayx") == 1.5
+
+
+def test_is_convex_rejects_a_self_intersecting_star():
+    star = parse_view("VIEW_POLYGON", "pts={0,10:2,-8:-9,4:9,4:-2,-8}")
+    pentagon = parse_view("VIEW_POLYGON", "pts={0,10:9,3:6,-8:-6,-8:-9,3}")
+    assert not star.is_convex() and pentagon.is_convex()
+
+
+def test_node_record_keeps_unknown_fields_like_cpp():
+    out = NodeRecord.from_spec("NAME=a,X=1,Y=2,SPD=1,HDG=0,ZEBRA=1,PITCH=12.5,APPLE=2").get_spec()
+    assert out.endswith(",APPLE=2,PITCH=12.5,ZEBRA=1")
+
+
+def test_get_spec_takes_active_by_keyword_only():
+    point = parse_view("VIEW_POINT", "x=1,y=2,label=p")
+    with pytest.raises(TypeError):
+        point.get_spec(False)
+    assert "active=false" in point.get_spec(active=False)
+    seglist = parse_view("VIEW_SEGLIST", "pts={1.25,2.5:3,4},label=s")
+    assert "pts={1.25,2.5:3,4}" in seglist.get_spec(2)

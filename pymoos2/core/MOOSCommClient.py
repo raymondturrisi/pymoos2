@@ -9,6 +9,7 @@ import socket
 import struct
 import threading
 import time
+import traceback
 
 from pymoos2.core.time import moos_pause, moos_local_time
 
@@ -46,6 +47,7 @@ class MOOSCommClient:
         self.app_name = app_name
         self.comm_tick = float(comm_tick)
         self.last_error = ""
+        self._reported = set()
 
         self._sock = None
         self._connected = False
@@ -281,14 +283,22 @@ class MOOSCommClient:
             with self._outbox_lock:
                 self._outbox[:0] = msgs
 
+    def _link_failed(self, e):
+        """Record why the link dropped; unexpected errors print their traceback once per kind."""
+        self.last_error = f"{type(e).__name__}: {e}"
+        if not isinstance(e, _LINK_ERRORS) and type(e) not in self._reported:
+            self._reported.add(type(e))
+            print(f"  ** {self.app_name} comms: {self.last_error}; retrying", flush=True)
+            traceback.print_exc()
+
     def _comms_loop(self):
         comm_period_ms = 1000.0 / self.comm_tick
         while self._running:
             if not self._connected:
                 try:
                     self._connect()
-                except _LINK_ERRORS as e:
-                    self.last_error = f"{type(e).__name__}: {e}"
+                except Exception as e:
+                    self._link_failed(e)
                     time.sleep(RETRY_PERIOD_S)
                     continue
 
@@ -322,8 +332,8 @@ class MOOSCommClient:
                 if sleep_ms > 1:
                     moos_pause(sleep_ms)
 
-            except _LINK_ERRORS as e:
-                self.last_error = f"{type(e).__name__}: {e}"
+            except Exception as e:
+                self._link_failed(e)
                 if not sent:
                     self._requeue(to_send)
                 self._close()

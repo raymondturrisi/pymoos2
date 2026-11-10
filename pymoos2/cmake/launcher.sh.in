@@ -1,10 +1,13 @@
 #!/bin/sh
-# @APP_NAME@ launcher. PYMOOS2_PYTHON_OVERRIDE changes the interpreter.
+# @APP_NAME@ launcher. PYMOOS2_PYTHON_OVERRIDE changes the interpreter; PYMOOS2_LAUNCH_LOG appends stderr to a file.
 PY="${PYMOOS2_PYTHON_OVERRIDE:-@PYMOOS2_PYTHON@}"
 @PKG_ROOT_LINE@
 export PYTHONPATH="$PKG_ROOT${PYTHONPATH:+:$PYTHONPATH}"
 SAFE=""
 if "$PY" -P -c "" 2>/dev/null; then
   SAFE="-P"
+fi
+if [ -n "$PYMOOS2_LAUNCH_LOG" ]; then
+  exec "$PY" $SAFE -m @PKG_NAME@ "$@" 2>>"$PYMOOS2_LAUNCH_LOG"
 fi
 exec "$PY" $SAFE -m @PKG_NAME@ "$@"

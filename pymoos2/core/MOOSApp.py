@@ -197,8 +197,8 @@ class MOOSApp:
         self.m_comms.start()
 
         if not self.m_comms.wait_until_connected(timeout=10.0):
-            print(f"  ** WARNING: {self.m_app_name} failed to connect to MOOSDB "
-                  f"at {server_host}:{server_port}")
+            print(f"  ** WARNING: {self.m_app_name} not connected to MOOSDB at {server_host}:{server_port} "
+                  f"after 10 s ({self.m_comms.last_error or 'no reply'}); still retrying", flush=True)
 
         set_moos_skew(self.m_comms.skew)
 

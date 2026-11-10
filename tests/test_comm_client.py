@@ -100,3 +100,23 @@ def test_reconnect_replays_and_flags(db):
     assert c.consume_reconnect() is True
     assert c.consume_reconnect() is False
     c.stop()
+
+
+def test_unexpected_handshake_error_keeps_retrying(db, monkeypatch, capsys):
+    c = MOOSCommClient("127.0.0.1", db.port, "pTest", comm_tick=50.0)
+    real = c._handshake
+    calls = []
+
+    def flaky():
+        calls.append(1)
+        if len(calls) == 1:
+            raise KeyError("unexpected")
+        return real()
+
+    monkeypatch.setattr(c, "_handshake", flaky)
+    c.start()
+    assert c.wait_until_connected(5.0)
+    assert len(calls) == 2
+    assert "KeyError" in c.last_error
+    assert "pTest comms: KeyError" in capsys.readouterr().out
+    c.stop()
